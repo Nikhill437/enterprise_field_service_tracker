@@ -9,9 +9,15 @@ import 'package:enterprise_field_service_tracker/services/task_api_service.dart'
 
 class MockTaskApiService extends Mock implements TaskApiService {}
 
+class FakeTask extends Fake implements Task {}
+
 void main() {
   late TaskApiService mockApiService;
   late TaskBloc taskBloc;
+
+  setUpAll(() {
+    registerFallbackValue(FakeTask());
+  });
 
   setUp(() {
     mockApiService = MockTaskApiService();
@@ -90,6 +96,92 @@ void main() {
         TaskLoading(),
         TaskLoaded(testTasks),
         TaskLoaded(testTasks, filter: TaskStatus.pending),
+      ],
+    );
+
+    blocTest<TaskBloc, TaskState>(
+      'emits TaskLoaded with task removed when DeleteTask succeeds',
+      build: () {
+        when(() => mockApiService.fetchTasks())
+            .thenAnswer((_) async => testTasks);
+        when(() => mockApiService.deleteTask('1'))
+            .thenAnswer((_) async {});
+        return taskBloc;
+      },
+      act: (bloc) async {
+        bloc.add(LoadTasks());
+        await Future.delayed(const Duration(milliseconds: 100));
+        bloc.add(const DeleteTask('1'));
+      },
+      expect: () => [
+        TaskLoading(),
+        TaskLoaded(testTasks),
+        TaskLoaded([testTasks[1]]), // Only second task remains
+      ],
+    );
+
+    blocTest<TaskBloc, TaskState>(
+      'emits TaskError when DeleteTask fails',
+      build: () {
+        when(() => mockApiService.fetchTasks())
+            .thenAnswer((_) async => testTasks);
+        when(() => mockApiService.deleteTask('1'))
+            .thenThrow(Exception('Delete failed'));
+        return taskBloc;
+      },
+      act: (bloc) async {
+        bloc.add(LoadTasks());
+        await Future.delayed(const Duration(milliseconds: 100));
+        bloc.add(const DeleteTask('1'));
+      },
+      expect: () => [
+        TaskLoading(),
+        TaskLoaded(testTasks),
+        isA<TaskError>(),
+      ],
+    );
+
+    blocTest<TaskBloc, TaskState>(
+      'emits TaskLoaded with updated task when UpdateTask succeeds',
+      build: () {
+        when(() => mockApiService.fetchTasks())
+            .thenAnswer((_) async => testTasks);
+        when(() => mockApiService.updateTask(any()))
+            .thenAnswer((invocation) async => invocation.positionalArguments[0] as Task);
+        return taskBloc;
+      },
+      act: (bloc) async {
+        bloc.add(LoadTasks());
+        await Future.delayed(const Duration(milliseconds: 100));
+        final updatedTask = testTasks[0].copyWith(title: 'Updated Task');
+        bloc.add(UpdateTask(updatedTask));
+      },
+      expect: () => [
+        TaskLoading(),
+        TaskLoaded(testTasks),
+        TaskLoaded([testTasks[0].copyWith(title: 'Updated Task'), testTasks[1]]),
+      ],
+    );
+
+    blocTest<TaskBloc, TaskState>(
+      'emits TaskError when UpdateTask fails',
+      build: () {
+        when(() => mockApiService.fetchTasks())
+            .thenAnswer((_) async => testTasks);
+        when(() => mockApiService.updateTask(any()))
+            .thenThrow(Exception('Update failed'));
+        return taskBloc;
+      },
+      act: (bloc) async {
+        bloc.add(LoadTasks());
+        await Future.delayed(const Duration(milliseconds: 100));
+        final updatedTask = testTasks[0].copyWith(title: 'Updated Task');
+        bloc.add(UpdateTask(updatedTask));
+      },
+      expect: () => [
+        TaskLoading(),
+        TaskLoaded(testTasks),
+        isA<TaskError>(),
       ],
     );
   });

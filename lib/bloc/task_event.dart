@@ -37,3 +37,21 @@ class FilterTasks extends TaskEvent {
   @override
   List<Object?> get props => [status];
 }
+
+class DeleteTask extends TaskEvent {
+  final String taskId;
+
+  const DeleteTask(this.taskId);
+
+  @override
+  List<Object?> get props => [taskId];
+}
+
+class UpdateTask extends TaskEvent {
+  final Task task;
+
+  const UpdateTask(this.task);
+
+  @override
+  List<Object?> get props => [task];
+}

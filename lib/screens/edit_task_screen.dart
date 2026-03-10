@@ -5,19 +5,32 @@ import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
 import '../models/task.dart';
 
-class AddTaskScreen extends StatefulWidget {
-  const AddTaskScreen({super.key});
+class EditTaskScreen extends StatefulWidget {
+  final Task task;
+
+  const EditTaskScreen({super.key, required this.task});
 
   @override
-  State<AddTaskScreen> createState() => _AddTaskScreenState();
+  State<EditTaskScreen> createState() => _EditTaskScreenState();
 }
 
-class _AddTaskScreenState extends State<AddTaskScreen> {
+class _EditTaskScreenState extends State<EditTaskScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  TaskPriority _selectedPriority = TaskPriority.medium;
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
+  late TaskPriority _selectedPriority;
+  late TaskStatus _selectedStatus;
   DateTime? _selectedDueDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.task.title);
+    _descriptionController = TextEditingController(text: widget.task.description);
+    _selectedPriority = widget.task.priority;
+    _selectedStatus = widget.task.status;
+    _selectedDueDate = widget.task.dueDate;
+  }
 
   @override
   void dispose() {
@@ -31,7 +44,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Create New Task'),
+        title: const Text('Edit Task'),
         actions: [
           TextButton(
             onPressed: _submitForm,
@@ -71,7 +84,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
-                          Icons.add_task,
+                          Icons.edit,
                           color: Colors.white,
                           size: 24,
                         ),
@@ -82,7 +95,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'New Field Service Task',
+                              'Edit Task',
                               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -90,7 +103,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Fill in the details below to create a new task',
+                              'Update task details and save changes',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
                                 fontSize: 14,
@@ -202,6 +215,67 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                                 }
                                 return null;
                               },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Status Selection
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.track_changes,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Task Status',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatusOption(
+                                    TaskStatus.pending,
+                                    'Pending',
+                                    Icons.schedule,
+                                    const Color(0xFFEA580C),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildStatusOption(
+                                    TaskStatus.inProgress,
+                                    'In Progress',
+                                    Icons.play_circle,
+                                    const Color(0xFF2563EB),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildStatusOption(
+                                    TaskStatus.completed,
+                                    'Completed',
+                                    Icons.check_circle,
+                                    const Color(0xFF059669),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -351,13 +425,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     
                     const SizedBox(height: 32),
                     
-                    // Create Button
+                    // Update Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _submitForm,
-                        icon: const Icon(Icons.add_task),
-                        label: const Text('Create Task'),
+                        icon: const Icon(Icons.save),
+                        label: const Text('Update Task'),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -369,6 +443,48 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   ],
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusOption(TaskStatus status, String label, IconData icon, Color color) {
+    final isSelected = _selectedStatus == status;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedStatus = status;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? color : Theme.of(context).colorScheme.outline,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? color : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              size: 20,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? color : Theme.of(context).colorScheme.onSurface,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -420,7 +536,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   Future<void> _selectDueDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 7)),
+      initialDate: _selectedDueDate ?? DateTime.now().add(const Duration(days: 7)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
@@ -444,17 +560,15 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      final newTask = Task(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      final updatedTask = widget.task.copyWith(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        status: TaskStatus.pending,
+        status: _selectedStatus,
         priority: _selectedPriority,
-        assignedDate: DateTime.now(),
         dueDate: _selectedDueDate,
       );
 
-      context.read<TaskBloc>().add(AddTask(newTask));
+      context.read<TaskBloc>().add(UpdateTask(updatedTask));
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -462,7 +576,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             children: [
               Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 8),
-              Text('Task created successfully'),
+              Text('Task updated successfully'),
             ],
           ),
           backgroundColor: Theme.of(context).colorScheme.primary,

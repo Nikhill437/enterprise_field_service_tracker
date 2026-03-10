@@ -13,6 +13,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<AddTask>(_onAddTask);
     on<UpdateTaskStatus>(_onUpdateTaskStatus);
     on<FilterTasks>(_onFilterTasks);
+    on<DeleteTask>(_onDeleteTask);
+    on<UpdateTask>(_onUpdateTask);
   }
 
   Future<void> _onLoadTasks(LoadTasks event, Emitter<TaskState> emit) async {
@@ -66,5 +68,44 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
   void _onFilterTasks(FilterTasks event, Emitter<TaskState> emit) {
     emit(TaskLoaded(_allTasks, filter: event.status));
+  }
+
+  Future<void> _onDeleteTask(DeleteTask event, Emitter<TaskState> emit) async {
+    try {
+      await apiService.deleteTask(event.taskId);
+      
+      _allTasks = _allTasks.where((task) => task.id != event.taskId).toList();
+
+      if (state is TaskLoaded) {
+        final currentState = state as TaskLoaded;
+        emit(TaskLoaded(_allTasks, filter: currentState.filter));
+      } else {
+        emit(TaskLoaded(_allTasks));
+      }
+    } catch (e) {
+      emit(TaskError(e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateTask(UpdateTask event, Emitter<TaskState> emit) async {
+    try {
+      final updatedTask = await apiService.updateTask(event.task);
+      
+      _allTasks = _allTasks.map((task) {
+        if (task.id == updatedTask.id) {
+          return updatedTask;
+        }
+        return task;
+      }).toList();
+
+      if (state is TaskLoaded) {
+        final currentState = state as TaskLoaded;
+        emit(TaskLoaded(_allTasks, filter: currentState.filter));
+      } else {
+        emit(TaskLoaded(_allTasks));
+      }
+    } catch (e) {
+      emit(TaskError(e.toString()));
+    }
   }
 }
